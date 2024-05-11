@@ -1,3 +1,13 @@
+# Source Code Notice
+
+The majority of the code in this directory originates from the vrc-get project, which is developed by anatawa12 and licensed under the MIT License.
+
+For more information on the original project, please visit the [vrc-get GitHub repository](https://github.com/vrc-get/vrc-get).
+
+Original README Content Follows
+
+---
+
 # Templates for vrc-get
 
 This directory contains project templates used in vrc-get.
