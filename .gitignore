@@ -1,0 +1,15 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+/.vscode/*
+!/.vscode/extensions.json
+
+/target/
+/dist/
+/build/

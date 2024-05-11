@@ -1,0 +1,16 @@
+{
+  "semi": false,
+  "singleQuote": false,
+  "endOfLine": "lf",
+  "trailingComma": "none",
+  "arrowParens": "avoid",
+  "overrides": [
+    {
+      "files": ["*.json5"],
+      "options": {
+        "singleQuote": false,
+        "quoteProps": "preserve"
+      }
+    }
+  ]
+}
