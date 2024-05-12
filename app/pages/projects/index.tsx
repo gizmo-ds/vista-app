@@ -61,11 +61,25 @@ function loadProjects(projects: Ref<TauriProject[]>, loading: Ref<boolean>) {
     })
 }
 
-function headerExtra() {
+function headerExtra(projects: Ref<TauriProject[]>, loading: Ref<boolean>) {
   const options = [{ label: "Add Existing Project", key: "add-existing" }]
   return () => (
-    <div class="mr-2">
-      <NButtonGroup size="small">
+    <div class="flex gap-3">
+      <NTooltip trigger="hover" placement="bottom" keepAliveOnHover={false}>
+        {{
+          default: () => <>Refresh projects</>,
+          trigger: () => (
+            <NButton
+              text
+              onClick={() => loadProjects(projects, loading)}
+              class="flex"
+            >
+              {{ icon: () => <Renew /> }}
+            </NButton>
+          )
+        }}
+      </NTooltip>
+      <NButtonGroup size="small" class="flex">
         <NButton type="primary">Create New Project</NButton>
         <NDropdown options={options} trigger="click">
           <NButton type="default" class="px-1">
@@ -76,11 +90,7 @@ function headerExtra() {
     </div>
   )
 }
-function header(
-  projects: Ref<TauriProject[]>,
-  loading: Ref<boolean>,
-  searchValue: Ref<string>
-) {
+function header(searchValue: Ref<string>) {
   return () => (
     <div class="flex flex-row grow-1">
       <div class="flex">
@@ -92,20 +102,6 @@ function header(
         </NEl>
       </div>
       <div class="flex mx-8 grow-1">
-        <NTooltip trigger="hover" placement="bottom" keepAliveOnHover={false}>
-          {{
-            default: () => <>Refresh projects</>,
-            trigger: () => (
-              <NButton
-                text
-                onClick={() => loadProjects(projects, loading)}
-                class="flex mr-3"
-              >
-                {{ icon: () => <Renew /> }}
-              </NButton>
-            )
-          }}
-        </NTooltip>
         <NInput
           placeholder="Search Projects..."
           size="small"
@@ -338,8 +334,8 @@ export default defineComponent({
               {{ empty: () => <NEmpty>No projects found</NEmpty> }}
             </NDataTable>
           ),
-          header: header(projects, loading, searchValue),
-          headerExtra: headerExtra()
+          header: header(searchValue),
+          headerExtra: headerExtra(projects, loading)
         }}
       </PageLayout>
     )
