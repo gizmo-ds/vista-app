@@ -6,8 +6,7 @@ import {
   NEmpty,
   NEl,
   NButton,
-  NTooltip,
-  NInput
+  NTooltip
 } from "naive-ui"
 import {
   type TauriRepositoriesInfo,
@@ -15,9 +14,10 @@ import {
   environmentShowRepository,
   environmentHideRepository,
   environmentRemoveRepository,
+  addRemoteRepoDialog
 } from "~/helper/index.ts"
 import PageLayout from "~/layout/PageLayout.tsx"
-import { SubtractAlt } from "@vicons/carbon"
+import { SubtractAlt, Renew } from "@vicons/carbon"
 
 interface repository {
   id: string
@@ -26,29 +26,25 @@ interface repository {
   enabled: boolean
 }
 
-function headerExtra() {
-  const dialog = useDialog()
-  let url = $ref("")
-  // let headers = $ref<Record<string, string>>({})
-
-  function handleAddRepo() {
-    dialog.info({
-      title: "Add repository",
-      showIcon: false,
-      content: () => (
-        <>
-          <NInput
-            value={url}
-            onInput={v => (url = v)}
-            placeholder="Enter the repository URL"
-          />
-        </>
-      )
-    })
-  }
+function headerExtra(loadRepos: () => void) {
   return () => (
-    <div class="mr-2">
-      <NButton type="primary" size="small" onClick={handleAddRepo}>
+    <div class="flex gap-3">
+      <NTooltip trigger="hover" placement="bottom" keepAliveOnHover={false}>
+        {{
+          default: () => <>Refresh repositories</>,
+          trigger: () => (
+            <NButton text onClick={() => loadRepos()} class="flex">
+              {{ icon: () => <Renew /> }}
+            </NButton>
+          )
+        }}
+      </NTooltip>
+      <NButton
+        type="primary"
+        size="small"
+        onClick={addRemoteRepoDialog(loadRepos)}
+        class="flex"
+      >
         Add repository
       </NButton>
     </div>
@@ -170,7 +166,7 @@ export default defineComponent({
               {{ empty: () => <NEmpty>No repositories found</NEmpty> }}
             </NDataTable>
           ),
-          headerExtra: headerExtra()
+          headerExtra: headerExtra(loadRepos)
         }}
       </PageLayout>
     )
