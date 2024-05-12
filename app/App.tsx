@@ -1,4 +1,4 @@
-import { defineComponent } from "vue"
+import { defineComponent, watch, onMounted } from "vue"
 import { useDark } from "@vueuse/core"
 import {
   NConfigProvider,
@@ -15,6 +15,10 @@ import { listen } from "@tauri-apps/api/event"
 export default defineComponent({
   setup() {
     const isDark = $(useDark())
+    const onThemeChange = () =>
+      (document.body.style.colorScheme = isDark ? "dark" : "light")
+    watch($$(isDark), onThemeChange)
+    onMounted(onThemeChange)
 
     listen<string[]>("tauri://file-drop", event => {
       const files = event.payload
@@ -23,10 +27,7 @@ export default defineComponent({
     })
 
     return () => (
-      <NConfigProvider
-        theme={isDark ? darkTheme : lightTheme}
-        style={{ colorScheme: isDark ? "dark" : "light" }}
-      >
+      <NConfigProvider theme={isDark ? darkTheme : lightTheme}>
         <NNotificationProvider placement="bottom-right">
           <NDialogProvider>
             <NLoadingBarProvider>
