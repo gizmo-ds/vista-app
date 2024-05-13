@@ -9,8 +9,6 @@ import {
   NTooltip
 } from "naive-ui"
 import {
-  type TauriRepositoriesInfo,
-  environmentRepositoriesInfo,
   environmentShowRepository,
   environmentHideRepository,
   environmentRemoveRepository,
@@ -19,6 +17,7 @@ import {
 } from "~/helper/index.ts"
 import PageLayout from "~/layout/PageLayout.tsx"
 import { SubtractAlt, Renew } from "@vicons/carbon"
+import { useRepositoryStore } from "~/store/index.ts"
 
 interface repository {
   id: string
@@ -27,14 +26,15 @@ interface repository {
   enabled: boolean
 }
 
-function headerExtra(loadRepos: () => void) {
+function headerExtra() {
+  const repositoryStore = useRepositoryStore()
   return () => (
     <div class="flex gap-3">
       <NTooltip trigger="hover" placement="bottom" keepAliveOnHover={false}>
         {{
-          default: () => <>Refresh repositories</>,
+          default: () => "Refresh repositories",
           trigger: () => (
-            <NButton text onClick={() => loadRepos()} class="flex">
+            <NButton text onClick={repositoryStore.loadRepos} class="flex">
               {{ icon: () => <Renew /> }}
             </NButton>
           )
@@ -43,7 +43,7 @@ function headerExtra(loadRepos: () => void) {
       <NButton
         type="primary"
         size="small"
-        onClick={addRemoteRepoDialog(loadRepos)}
+        onClick={addRemoteRepoDialog()}
         class="flex"
       >
         Add repository
@@ -54,41 +54,19 @@ function headerExtra(loadRepos: () => void) {
 
 export default defineComponent({
   setup() {
-    let loading = $ref(true)
-    let reposInfo = $ref<TauriRepositoriesInfo>()
-    let enabledRepos = $ref<string[]>([])
-    let repos = $computed(() =>
-      reposInfo?.user_repositories.map(
-        repo =>
-          ({
-            id: repo.id,
-            displayName: repo.display_name,
-            url: repo.url,
-            enabled: enabledRepos.includes(repo.id)
-          } as repository)
-      )
-    )
+    const repositoryStore = useRepositoryStore()
     const dialog = useDialog()
-    function loadRepos() {
-      environmentRepositoriesInfo()
-        .finally(() => (loading = false))
-        .then(info => {
-          enabledRepos = info.user_repositories
-            .filter(r => !info.hidden_user_repositories.includes(r.id))
-            .map(r => r.id)
-          reposInfo = info
-        })
-    }
     function handleChecked(keys?: string[]) {
-      const diffHide = enabledRepos.filter(x => !keys?.includes(x))
-      const diffShow = keys?.filter(x => !enabledRepos.includes(x))
+      const diffHide =
+        repositoryStore.enabledRepos?.filter(x => !keys?.includes(x)) ?? []
+      const diffShow =
+        keys?.filter(x => !repositoryStore.enabledRepos?.includes(x)) ?? []
       Promise.all(
         (diffShow?.map(id => environmentShowRepository(id)) ?? []).concat(
           diffHide.map(id => environmentHideRepository(id))
         )
-      ).then(() => loadRepos())
+      ).then(repositoryStore.loadRepos)
     }
-    loadRepos()
     function removeRepo(repo: repository) {
       const elements = bbcode2element(
         "Are you sure you want to remove the repository [b]$1[/b]?",
@@ -100,10 +78,10 @@ export default defineComponent({
         positiveText: "Remove",
         negativeText: "Cancel",
         onPositiveClick() {
-          loading = true
+          repositoryStore.loading = true
           environmentRemoveRepository(repo.id)
-            .finally(() => (loading = false))
-            .then(() => loadRepos())
+            .finally(() => (repositoryStore.loading = false))
+            .then(repositoryStore.loadRepos)
         }
       })
     }
@@ -133,8 +111,8 @@ export default defineComponent({
         key: "actions",
         width: "5rem",
         render: repo => (
-          <div class="flex flex-col items-center">
-            <NTooltip trigger="hover" placement="left" keepAliveOnHover={false}>
+          <div class="flex flex-col">
+            <NTooltip trigger="hover" keepAliveOnHover={false}>
               {{
                 default: () => "Remove repository",
                 trigger: () => (
@@ -155,17 +133,17 @@ export default defineComponent({
           default: () => (
             <NDataTable
               columns={columns}
-              loading={loading}
-              data={repos}
+              loading={repositoryStore.loading}
+              data={repositoryStore.repositories ?? []}
               rowKey={(r: repository) => r.id}
-              checkedRowKeys={enabledRepos}
+              checkedRowKeys={repositoryStore.enabledRepos}
               onUpdate:checkedRowKeys={keys => handleChecked(keys as string[])}
               size="small"
             >
               {{ empty: () => <NEmpty>No repositories found</NEmpty> }}
             </NDataTable>
           ),
-          headerExtra: headerExtra(loadRepos)
+          headerExtra: headerExtra()
         }}
       </PageLayout>
     )

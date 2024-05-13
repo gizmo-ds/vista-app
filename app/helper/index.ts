@@ -1,5 +1,5 @@
 export * from "./licenses.ts"
 export * from "./datetime.ts"
 export * from "@/lib/bindings.ts"
-export * from "./repositorys.tsx"
+export * from "./repository.tsx"
 export * from "./bbcode.tsx"

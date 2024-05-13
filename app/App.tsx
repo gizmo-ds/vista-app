@@ -1,5 +1,6 @@
 import { defineComponent, watch, onMounted } from "vue"
 import { useDark } from "@vueuse/core"
+import { listen } from "@tauri-apps/api/event"
 import {
   NConfigProvider,
   NDialogProvider,
@@ -10,7 +11,7 @@ import {
   lightTheme
 } from "naive-ui"
 import AppLayout from "./layout/AppLayout.tsx"
-import { listen } from "@tauri-apps/api/event"
+import { useRepositoryStore } from "./store/index.ts"
 
 export default defineComponent({
   setup() {
@@ -25,6 +26,9 @@ export default defineComponent({
       console.log(files)
       if (!files || files.length === 0) return
     })
+
+    const repositoryStore = useRepositoryStore()
+    repositoryStore.loadRepos()
 
     return () => (
       <NConfigProvider theme={isDark ? darkTheme : lightTheme}>

@@ -14,8 +14,9 @@ import {
   useLoadingBar,
   useNotification
 } from "naive-ui"
+import { useRepositoryStore } from "~/store/index.ts"
 
-export function addRemoteRepoDialog(onSuccess: () => void) {
+export function addRemoteRepoDialog() {
   interface HeaderInfo {
     name: string
     value: string
@@ -24,6 +25,7 @@ export function addRemoteRepoDialog(onSuccess: () => void) {
   const dialog = useDialog()
   const loadingBar = useLoadingBar()
   const notification = useNotification()
+  const repositoryStore = useRepositoryStore()
 
   function confirmDialog(
     url: string,
@@ -194,7 +196,7 @@ export function addRemoteRepoDialog(onSuccess: () => void) {
         case "Success":
           return confirmDialog(url, header, info.value, () => {
             dialogRef.destroy()
-            onSuccess()
+            repositoryStore.loadRepos()
           })
         case "BadUrl":
           errorMessage = "The URL is invalid."
@@ -209,9 +211,10 @@ export function addRemoteRepoDialog(onSuccess: () => void) {
           console.error(info)
           break
       }
-      dialog.error({
+      notification.error({
         title: "Failed to add repository",
-        content: errorMessage
+        content: errorMessage,
+        duration: 5000
       })
     }
   }
