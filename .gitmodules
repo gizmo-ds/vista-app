@@ -1,3 +1,4 @@
 [submodule "vrc-get"]
 	path = vrc-get
-	url = https://github.com/vrc-get/vrc-get.git
+	url = https://github.com/gizmo-ds/vrc-get.git
+	branch = vista
