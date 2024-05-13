@@ -108,6 +108,8 @@ export function bbcode2element(bbcode: string, args: string[]): JSX.Element[] {
         return <del>{content}</del>
       case NodeType.UnderlineText:
         return <span class="underline">{content}</span>
+      case NodeType.ItalicText:
+        return <i>{content}</i>
       default:
         return <span>{content}</span>
     }
