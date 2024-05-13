@@ -1,8 +1,25 @@
-import { defineComponent, nextTick } from "vue"
-import { NTag, NText, NVirtualList, NEllipsis, NDropdown } from "naive-ui"
+import { type Ref, defineComponent, nextTick } from "vue"
+import {
+  NTag,
+  NText,
+  NVirtualList,
+  NEllipsis,
+  NDropdown,
+  NEl,
+  NInput,
+  NIcon,
+  NInputGroup,
+  NButton,
+  NSelect
+} from "naive-ui"
 import { formatISO9075 } from "date-fns"
 import PageLayout from "~/layout/PageLayout.tsx"
-import { type LogEntry, utilGetLogEntries } from "~/helper/index.ts"
+import {
+  type LogEntry,
+  type LogLevel,
+  utilGetLogEntries
+} from "~/helper/index.ts"
+import { Search } from "@vicons/carbon"
 
 type NTagType = "default" | "info" | "error" | "success" | "primary" | "warning"
 
@@ -50,16 +67,73 @@ function logItem(
   )
 }
 
+function header(searchValue: Ref<string>, logTypeFilter: Ref<LogLevel[]>) {
+  return () => (
+    <div class="flex flex-row grow-1">
+      <div class="flex">
+        <NEl
+          class="flex text-size-xl fw-bold"
+          style={{ color: "var(--text-color-1)" }}
+        >
+          Logs
+        </NEl>
+      </div>
+      <div class="flex ml-8 grow-1">
+        <NInputGroup>
+          <NInput
+            placeholder="Search logs..."
+            size="small"
+            clearable
+            value={searchValue.value}
+            onInput={v => (searchValue.value = v)}
+          >
+            {{
+              prefix: () => (
+                <NIcon>
+                  <Search />
+                </NIcon>
+              )
+            }}
+          </NInput>
+          <NSelect
+            multiple
+            maxTagCount={2}
+            value={logTypeFilter.value}
+            options={[
+              { label: "Error", value: "Error" },
+              { label: "Warn", value: "Warn" },
+              { label: "Info", value: "Info" },
+              { label: "Debug", value: "Debug" },
+              { label: "Trace", value: "Trace" }
+            ]}
+            onUpdate:value={(v: LogLevel[]) => (logTypeFilter.value = v)}
+            renderTag={({ option }) => levelTag(option.value as string)}
+            class="w-20rem"
+          />
+        </NInputGroup>
+      </div>
+    </div>
+  )
+}
+
 export default defineComponent({
   setup() {
     let logs = $ref<LogEntry[]>([])
     utilGetLogEntries().then((list: LogEntry[]) => (logs = list))
+    let logTypeFilter = $ref<LogLevel[]>(["Error", "Warn", "Info", "Debug"])
+    let messageFilter = $ref("")
+    let _logs = $computed(() =>
+      logs.filter(
+        log =>
+          logTypeFilter.includes(log.level) &&
+          log.message.toLowerCase().includes(messageFilter.toLowerCase())
+      )
+    )
 
     let x = $ref(0)
     let y = $ref(0)
     let showContextMenu = $ref(false)
     let selectedLog = $ref<LogEntry | null>(null)
-
     function handleContextMenu(item: LogEntry) {
       return (e: MouseEvent) => {
         selectedLog = item
@@ -95,30 +169,39 @@ export default defineComponent({
     }
 
     return () => (
-      <PageLayout title="Logs">
-        <NDropdown
-          placement="bottom-start"
-          trigger="manual"
-          size="small"
-          show={showContextMenu}
-          x={x}
-          y={y}
-          options={[
-            { label: "Copy", key: "copy" },
-            { label: "Copy message", key: "copy-message" }
-          ]}
-          onClickoutside={() => (showContextMenu = false)}
-          onSelect={handleContextMenuSelect}
-        />
+      <PageLayout>
+        {{
+          default: () => (
+            <>
+              <NDropdown
+                placement="bottom-start"
+                trigger="manual"
+                size="small"
+                show={showContextMenu}
+                x={x}
+                y={y}
+                options={[
+                  { label: "Copy", key: "copy" },
+                  { label: "Copy message", key: "copy-message" }
+                ]}
+                onClickoutside={() => (showContextMenu = false)}
+                onSelect={handleContextMenuSelect}
+              />
 
-        <NVirtualList
-          itemSize={28}
-          itemResizable
-          items={logs}
-          class="h-[calc(100vh-5rem)]"
-        >
-          {({ item }: { item: LogEntry }) => logItem(item, handleContextMenu)}
-        </NVirtualList>
+              <NVirtualList
+                itemSize={28}
+                itemResizable
+                items={_logs}
+                class="h-[calc(100vh-5rem)]"
+              >
+                {({ item }: { item: LogEntry }) =>
+                  logItem(item, handleContextMenu)
+                }
+              </NVirtualList>
+            </>
+          ),
+          header: header($$(messageFilter), $$(logTypeFilter))
+        }}
       </PageLayout>
     )
   }
