@@ -14,7 +14,8 @@ import {
   environmentShowRepository,
   environmentHideRepository,
   environmentRemoveRepository,
-  addRemoteRepoDialog
+  addRemoteRepoDialog,
+  bbcode2element
 } from "~/helper/index.ts"
 import PageLayout from "~/layout/PageLayout.tsx"
 import { SubtractAlt, Renew } from "@vicons/carbon"
@@ -89,15 +90,13 @@ export default defineComponent({
     }
     loadRepos()
     function removeRepo(repo: repository) {
+      const elements = bbcode2element(
+        "Are you sure you want to remove the repository [b]$1[/b]?",
+        [repo.displayName]
+      )
       dialog.warning({
         title: "Remove repository",
-        content: () => (
-          <>
-            <span>Are you sure you want to remove the repository </span>
-            <b>{repo.displayName}</b>
-            <span>?</span>
-          </>
-        ),
+        content: () => elements,
         positiveText: "Remove",
         negativeText: "Cancel",
         onPositiveClick() {
