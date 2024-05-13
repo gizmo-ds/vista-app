@@ -38,10 +38,7 @@ export const useRepositoryStore = defineStore("repositoryStore", () => {
     loading.value = true
     return environmentRepositoriesInfo()
       .finally(() => (loading.value = false))
-      .then(info => {
-        repositoriesInfo.value = info
-        console.log(info)
-      })
+      .then(info => (repositoriesInfo.value = info))
   }
 
   return { repositoriesInfo, loading, enabledRepos, repositories, loadRepos }

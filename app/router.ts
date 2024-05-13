@@ -5,5 +5,3 @@ export default createRouter({
   history: createWebHistory(),
   routes
 })
-
-console.log(routes)
