@@ -207,8 +207,8 @@ function actionsRender() {
     )
 
     const options = [
-      { label: "Open project folder", key: "openFolder" },
-      { label: "Create backup", key: "backup" },
+      { label: "Reveal in File Explorer", key: "openFolder" },
+      { label: "Create Backup", key: "backup" },
       { key: "divider", type: "divider" },
       {
         label: () => (
@@ -249,7 +249,12 @@ function actionsRender() {
     }
     return (
       <NButtonGroup>
-        <OpenProject path={p.path} unityPath={unityPath.value} name={p.name} />
+        <OpenProject
+          path={p.path}
+          unityPath={unityPath.value}
+          name={p.name}
+          showIcon
+        />
         <NButton disabled={manageDisabled} onClick={projectManage}>
           Manage
         </NButton>
@@ -303,7 +308,7 @@ function createTableColumns(
     },
     {
       key: "actions",
-      width: "16rem",
+      width: "17rem",
       render: actionsRender()
     }
   ]

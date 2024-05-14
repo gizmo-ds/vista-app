@@ -21,7 +21,8 @@ export default defineConfig(async () => ({
     UnoCSS(),
     createViteLicensePlugin({
       licenseOverrides: {
-        "@vicons/carbon@0.12.0": "Apache-2.0"
+        "@vicons/carbon@0.12.0": "Apache-2.0",
+        "@vicons/fa@0.12.0": "CC-BY-4.0"
       }
     }),
     licensesGzip()

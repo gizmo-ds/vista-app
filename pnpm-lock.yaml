@@ -39,6 +39,9 @@ importers:
       '@vicons/carbon':
         specifier: ^0.12.0
         version: 0.12.0
+      '@vicons/fa':
+        specifier: ^0.12.0
+        version: 0.12.0
       '@vitejs/plugin-vue':
         specifier: ^5.0.4
         version: 5.0.4(vite@5.2.11(@types/node@20.12.8)(sass@1.76.0))(vue@3.4.26(typescript@5.4.5))
@@ -726,6 +729,9 @@ packages:
 
   '@vicons/carbon@0.12.0':
     resolution: {integrity: sha512-kCOgr/ZOhZzoiFLJ8pwxMa2TMxrkCUOA22qExPabus35F4+USqzcsxaPoYtqRd9ROOYiHrSqwapak/ywF0D9bg==}
+
+  '@vicons/fa@0.12.0':
+    resolution: {integrity: sha512-g2PIeJLsTHUjt6bK63LxqC0uYQB7iu+xViJOxvp1s8b9/akpXVPVWjDTTsP980/0KYyMMe4U7F/aUo7wY+MsXA==}
 
   '@vitejs/plugin-vue-jsx@3.1.0':
     resolution: {integrity: sha512-w9M6F3LSEU5kszVb9An2/MmXNxocAnUb3WhRr8bHlimhDrXNt6n6D2nJQR3UXpGlZHh/EsgouOHCsM8V3Ln+WA==}
@@ -2601,6 +2607,8 @@ snapshots:
       - rollup
 
   '@vicons/carbon@0.12.0': {}
+
+  '@vicons/fa@0.12.0': {}
 
   '@vitejs/plugin-vue-jsx@3.1.0(vite@5.2.11(@types/node@20.12.8)(sass@1.76.0))(vue@3.4.26(typescript@5.4.5))':
     dependencies:
