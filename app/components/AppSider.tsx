@@ -8,7 +8,8 @@ import {
   ModelAlt,
   Settings
 } from "@vicons/carbon"
-import { useDark, useToggle } from "@vueuse/core"
+import { useToggle } from "@vueuse/core"
+import { useDark } from "~/helper/index.ts"
 
 const options: MenuOption[] = [
   {

@@ -1,5 +1,4 @@
 import { defineComponent, watch, onMounted } from "vue"
-import { useDark } from "@vueuse/core"
 import { listen } from "@tauri-apps/api/event"
 import {
   NConfigProvider,
@@ -12,6 +11,7 @@ import {
 } from "naive-ui"
 import AppLayout from "./layout/AppLayout.tsx"
 import { useRepositoryStore } from "./store/index.ts"
+import { useDark } from "./helper/index.ts"
 
 export default defineComponent({
   setup() {

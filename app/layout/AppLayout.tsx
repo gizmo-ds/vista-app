@@ -1,10 +1,11 @@
 import { defineComponent } from "vue"
 import { NLayout, NLayoutSider } from "naive-ui"
-import AppSider from "@/app/components/AppSider"
+import { useLocalStorage } from "@vueuse/core"
+import AppSider from "~/components/AppSider"
 
 export default defineComponent({
   setup() {
-    let siderCollapsed = $ref(false)
+    let siderCollapsed = $(useLocalStorage("app-sider-collapsed", false))
     const siderWidth = $computed(() => (siderCollapsed ? 64 : 200))
     return () => (
       <NLayout has-sider position="absolute" class="h-screen">
