@@ -1,5 +1,5 @@
 import { defineComponent } from "vue"
-import { NIcon, NEl, NEllipsis, NTooltip } from "naive-ui"
+import { NIcon, NEllipsis, NTooltip, useThemeVars } from "naive-ui"
 import { ArrowLeft } from "@vicons/carbon"
 import { useRouter } from "vue-router"
 
@@ -11,6 +11,7 @@ export default defineComponent({
   },
   setup(props, { slots }) {
     const router = useRouter()
+    const theme = useThemeVars()
     function backIcon() {
       if (!props.hasBack) return null
       return (
@@ -44,19 +45,19 @@ export default defineComponent({
             slots.header!()
           ) : (
             <>
-              <NEl
+              <span
                 class="flex text-size-xl fw-bold"
-                style={{ color: "var(--text-color-1)" }}
+                style={{ color: theme.value.textColor1 }}
               >
                 {props.title}
-              </NEl>
+              </span>
 
-              <NEl
+              <span
                 class="pl-1.5 font-size-12px pt-1"
-                style={{ color: "var(--text-color-3)" }}
+                style={{ color: theme.value.textColor3 }}
               >
                 <NEllipsis>{props.subtitle}</NEllipsis>
-              </NEl>
+              </span>
             </>
           )}
         </div>

@@ -5,12 +5,11 @@ import {
   NVirtualList,
   NEllipsis,
   NDropdown,
-  NEl,
   NInput,
   NIcon,
   NInputGroup,
-  NButton,
-  NSelect
+  NSelect,
+  useThemeVars
 } from "naive-ui"
 import { formatISO9075 } from "date-fns"
 import PageLayout from "~/layout/PageLayout.tsx"
@@ -23,7 +22,7 @@ import { Search } from "@vicons/carbon"
 
 type NTagType = "default" | "info" | "error" | "success" | "primary" | "warning"
 
-function levelTag(level: string) {
+function levelTag(level: LogLevel) {
   let tagType: NTagType = "default"
   switch (level) {
     case "Info":
@@ -68,15 +67,16 @@ function logItem(
 }
 
 function header(searchValue: Ref<string>, logTypeFilter: Ref<LogLevel[]>) {
+  const theme = useThemeVars()
   return () => (
     <div class="flex flex-row grow-1">
       <div class="flex">
-        <NEl
+        <span
           class="flex text-size-xl fw-bold"
-          style={{ color: "var(--text-color-1)" }}
+          style={{ color: theme.value.textColor1 }}
         >
           Logs
-        </NEl>
+        </span>
       </div>
       <div class="flex ml-8 grow-1">
         <NInputGroup>
@@ -107,7 +107,7 @@ function header(searchValue: Ref<string>, logTypeFilter: Ref<LogLevel[]>) {
               { label: "Trace", value: "Trace" }
             ]}
             onUpdate:value={(v: LogLevel[]) => (logTypeFilter.value = v)}
-            renderTag={({ option }) => levelTag(option.value as string)}
+            renderTag={({ option }) => levelTag(option.value as LogLevel)}
             class="w-20rem"
           />
         </NInputGroup>
@@ -122,13 +122,13 @@ export default defineComponent({
     utilGetLogEntries().then((list: LogEntry[]) => (logs = list))
     let logTypeFilter = $ref<LogLevel[]>(["Error", "Warn", "Info", "Debug"])
     let messageFilter = $ref("")
-    let _logs = $computed(() =>
-      logs.filter(
+    let _logs = $computed(() => {
+      return logs.filter(
         log =>
           logTypeFilter.includes(log.level) &&
           log.message.toLowerCase().includes(messageFilter.toLowerCase())
       )
-    )
+    })
 
     let x = $ref(0)
     let y = $ref(0)

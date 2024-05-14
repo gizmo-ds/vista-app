@@ -4,9 +4,9 @@ import {
   useDialog,
   NDataTable,
   NEmpty,
-  NEl,
   NButton,
-  NTooltip
+  NTooltip,
+  useThemeVars
 } from "naive-ui"
 import {
   environmentShowRepository,
@@ -85,6 +85,7 @@ export default defineComponent({
         }
       })
     }
+    const theme = useThemeVars()
 
     const columns: DataTableColumns<repository> = [
       {
@@ -98,7 +99,7 @@ export default defineComponent({
         render: repo => (
           <div class="flex flex-col">
             <div class="font-bold text-size-4">{repo.displayName}</div>
-            <NEl style={{ color: "var(--text-color-3)" }}>{repo.id}</NEl>
+            <span style={{ color: theme.value.textColor3 }}>{repo.id}</span>
           </div>
         )
       },

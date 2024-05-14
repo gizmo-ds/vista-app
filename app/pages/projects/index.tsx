@@ -9,7 +9,6 @@ import {
   NButton,
   NButtonGroup,
   NTooltip,
-  NEl,
   NInput,
   useThemeVars
 } from "naive-ui"
@@ -91,15 +90,16 @@ function headerExtra(projects: Ref<TauriProject[]>, loading: Ref<boolean>) {
   )
 }
 function header(searchValue: Ref<string>) {
+  const theme = useThemeVars()
   return () => (
     <div class="flex flex-row grow-1">
       <div class="flex">
-        <NEl
+        <span
           class="flex text-size-xl fw-bold"
-          style={{ color: "var(--text-color-1)" }}
+          style={{ color: theme.value.textColor1 }}
         >
           Projects
-        </NEl>
+        </span>
       </div>
       <div class="flex mx-8 grow-1">
         <NInput
@@ -165,6 +165,7 @@ function nameRender() {
   )
 }
 function projectTypeRender() {
+  const theme = useThemeVars()
   return (p: TauriProject) => {
     const projectType = TauriProjectType2ProjectType(p.project_type)
     const projectTypeStr = projectType
@@ -179,15 +180,15 @@ function projectTypeRender() {
               else return <UnknownFilled />
             })()}
           </NIcon>
-          <div class="flex flex-col">
+          <div>
             <div>{projectTypeStr}</div>
             {isLegacy && (
-              <NEl
+              <span
                 class="text-size-3"
-                style={{ color: "var(--error-color-hover)" }}
+                style={{ color: theme.value.errorColorHover }}
               >
                 Legacy
-              </NEl>
+              </span>
             )}
           </div>
         </div>
@@ -198,6 +199,7 @@ function projectTypeRender() {
 function actionsRender() {
   const router = useRouter()
   const unityStore = useUnityStore()
+  const theme = useThemeVars()
 
   return (p: TauriProject) => {
     const unityPath = computed(
@@ -210,13 +212,17 @@ function actionsRender() {
       { key: "divider", type: "divider" },
       {
         label: () => (
-          <NEl style={{ color: "var(--error-color)" }}>Remove from List</NEl>
+          <span style={{ color: theme.value.errorColor }}>
+            Remove from List
+          </span>
         ),
         key: "remove"
       },
       {
         label: () => (
-          <NEl style={{ color: "var(--error-color)" }}>Delete from Disk</NEl>
+          <span style={{ color: theme.value.errorColor }}>
+            Delete from Disk
+          </span>
         ),
         key: "delete"
       }
