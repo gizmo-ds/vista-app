@@ -32,6 +32,7 @@ export default defineComponent({
             <NText code>{props.url}</NText>
           </p>
         ),
+        style: { width: "30rem" },
         showIcon: false,
         positiveText: "Open",
         onPositiveClick: () => open(props.url!),
