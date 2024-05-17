@@ -53,8 +53,8 @@ const AppearanceItem = defineComponent({
               <NRadioButton value="auto">
                 <NTooltip showArrow={false}>
                   {{
-                    trigger: "System",
-                    default: "Same as System"
+                    trigger: () => "System",
+                    default: () => "Same as System"
                   }}
                 </NTooltip>
               </NRadioButton>
@@ -109,7 +109,7 @@ const AboutItem = defineComponent({
         <RouterLink to={{ name: "settings-licenses" }}>
           <NButton text>
             {{
-              default: "View Licenses",
+              default: () => "View Licenses",
               icon: () => (
                 <NIcon>
                   <LicenseThirdParty />
