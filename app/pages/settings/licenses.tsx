@@ -10,7 +10,7 @@ export default defineComponent({
     getLicenses().then(list => (licenses = list))
 
     return () => (
-      <PageLayout title="Credits" hasBack={true}>
+      <PageLayout title="Licenses" hasBack={true}>
         <div class="mt-0 mb-2">
           <p>
             This project is made possible by the following open-source projects.

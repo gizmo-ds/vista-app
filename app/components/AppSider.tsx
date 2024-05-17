@@ -31,12 +31,12 @@ export default defineComponent({
     let currentMenu = $computed(() => {
       let name = router.currentRoute.value.name
       if (name === "projects-manage") return "projects"
+      if (name === "settings-licenses") return "settings"
       return name
     })
 
     return () => (
       <NMenu
-        class="max-h-[calc(100vh-60px)] overflow-y-auto "
         options={options}
         collapsed={props.collapsed}
         value={currentMenu?.toString()}
