@@ -5,8 +5,7 @@ import {
   NRadioButton,
   NSelect,
   NButton,
-  NTooltip,
-  NIcon
+  NTooltip
 } from "naive-ui"
 import { useLocalStorage } from "@vueuse/core"
 import PageLayout from "~/layout/PageLayout.tsx"
@@ -50,14 +49,14 @@ const AppearanceItem = defineComponent({
               value={theme}
               onUpdate:value={v => (theme = v)}
             >
-              <NRadioButton value="auto">
-                <NTooltip showArrow={false}>
-                  {{
-                    trigger: () => "System",
-                    default: () => "Same as System"
-                  }}
-                </NTooltip>
-              </NRadioButton>
+              <NTooltip showArrow={false}>
+                {{
+                  trigger: () => (
+                    <NRadioButton value="auto">System</NRadioButton>
+                  ),
+                  default: () => "Same as System"
+                }}
+              </NTooltip>
               <NRadioButton value="light">Light</NRadioButton>
               <NRadioButton value="dark">Dark</NRadioButton>
             </NRadioGroup>
@@ -107,15 +106,8 @@ const AboutItem = defineComponent({
           this software, please refer to the licensing page.
         </div>
         <RouterLink to={{ name: "settings-licenses" }}>
-          <NButton text>
-            {{
-              default: () => "View Licenses",
-              icon: () => (
-                <NIcon>
-                  <LicenseThirdParty />
-                </NIcon>
-              )
-            }}
+          <NButton text renderIcon={() => <LicenseThirdParty />}>
+            View Licenses
           </NButton>
         </RouterLink>
       </SettingComponent>
