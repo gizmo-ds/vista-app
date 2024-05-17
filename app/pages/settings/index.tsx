@@ -106,7 +106,7 @@ const AboutItem = defineComponent({
           this software, please refer to the licensing page.
         </div>
         <RouterLink to={{ name: "settings-licenses" }}>
-          <NButton text renderIcon={() => <LicenseThirdParty />}>
+          <NButton text type="primary" renderIcon={() => <LicenseThirdParty />}>
             View Licenses
           </NButton>
         </RouterLink>
