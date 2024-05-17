@@ -6,7 +6,8 @@ export default defineComponent({
   props: {
     title: String,
     subtitle: String,
-    hasBack: Boolean
+    hasBack: Boolean,
+    noPadding: Boolean
   },
   setup(props, { slots }) {
     return () => (
@@ -25,7 +26,11 @@ export default defineComponent({
         </NLayoutHeader>
         {slots.default && (
           <NLayout position="absolute" class="top-3rem!">
-            <div class="p-1rem">{slots.default!()}</div>
+            {props.noPadding ? (
+              <div>{slots.default!()}</div>
+            ) : (
+              <div class="p-1rem">{slots.default!()}</div>
+            )}
           </NLayout>
         )}
       </>
