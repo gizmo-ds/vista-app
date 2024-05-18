@@ -89,10 +89,16 @@ const AboutItem = defineComponent({
               Gizmo
             </NButton>
           </OpenUrl>
-          {" & "}
+          {" and "}
           <OpenUrl url={contributorsUrl}>
             <NButton text type="primary">
               contributors
+            </NButton>
+          </OpenUrl>
+          {" and "}
+          <OpenUrl url="https://github.com/anatawa12">
+            <NButton text type="primary">
+              anatawa12
             </NButton>
           </OpenUrl>
         </div>
