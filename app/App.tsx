@@ -10,7 +10,6 @@ import {
   lightTheme
 } from "naive-ui"
 import AppLayout from "./layout/AppLayout.tsx"
-import { useRepositoryStore } from "./store/index.ts"
 import { useDark } from "./helper/index.ts"
 
 export default defineComponent({
@@ -26,9 +25,6 @@ export default defineComponent({
       console.log(files)
       if (!files || files.length === 0) return
     })
-
-    const repositoryStore = useRepositoryStore()
-    repositoryStore.loadRepos()
 
     return () => (
       <NConfigProvider theme={isDark ? darkTheme : lightTheme}>

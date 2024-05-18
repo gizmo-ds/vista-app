@@ -86,10 +86,9 @@ const ShowPackages = defineComponent({
         .sort((a, b) => compareVersion(b.version, a.version))
         .sort((a, b) => a.name.localeCompare(b.name))
 
-      console.log(repositoryStore.showPrereleasePackages)
-
       dialog.info({
         title: `Packages in ${repo.displayName}`,
+        style: { width: "30rem" },
         content: () => (
           <div class="flex flex-col gap-2">
             <div>
@@ -106,7 +105,6 @@ const ShowPackages = defineComponent({
           </div>
         )
       })
-      console.log(pkgs)
     }
     return () => (
       <NTooltip>
