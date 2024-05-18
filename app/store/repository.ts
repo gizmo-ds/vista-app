@@ -2,7 +2,8 @@ import { defineStore } from "pinia"
 import { computed, ref } from "vue"
 import {
   type TauriRepositoriesInfo,
-  environmentRepositoriesInfo
+  environmentRepositoriesInfo,
+  environmentSetShowPrereleasePackages
 } from "~/helper/index.ts"
 
 interface repository {
@@ -13,17 +14,14 @@ interface repository {
 }
 
 export const useRepositoryStore = defineStore("repositoryStore", () => {
-  const repositoriesInfo = ref<TauriRepositoriesInfo>()
+  const info = ref<TauriRepositoriesInfo>()
   const enabledRepos = computed(() =>
-    repositoriesInfo.value?.user_repositories
-      .filter(
-        repo =>
-          !repositoriesInfo.value?.hidden_user_repositories.includes(repo.id)
-      )
+    info.value?.user_repositories
+      .filter(repo => !info.value?.hidden_user_repositories.includes(repo.id))
       .map(repo => repo.id)
   )
   const repositories = computed(() =>
-    repositoriesInfo.value?.user_repositories.map(
+    info.value?.user_repositories.map(
       repo =>
         ({
           id: repo.id,
@@ -38,8 +36,27 @@ export const useRepositoryStore = defineStore("repositoryStore", () => {
     loading.value = true
     return environmentRepositoriesInfo()
       .finally(() => (loading.value = false))
-      .then(info => (repositoriesInfo.value = info))
+      .then(v => {
+        info.value = v
+        showPrereleasePackages.value = v.show_prerelease_packages
+      })
   }
+  const showPrereleasePackages = computed({
+    get: () => info.value?.show_prerelease_packages,
+    set: value => {
+      if (value === undefined) return
+      environmentSetShowPrereleasePackages(value).then(
+        () => (info.value!.show_prerelease_packages = value)
+      )
+    }
+  })
 
-  return { repositoriesInfo, loading, enabledRepos, repositories, loadRepos }
+  return {
+    info,
+    loading,
+    enabledRepos,
+    repositories,
+    loadRepos,
+    showPrereleasePackages
+  }
 })

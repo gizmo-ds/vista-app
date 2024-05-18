@@ -1,4 +1,4 @@
-import { defineComponent } from "vue"
+import { type PropType, defineComponent } from "vue"
 import {
   type DataTableColumns,
   useDialog,
@@ -6,18 +6,22 @@ import {
   NEmpty,
   NButton,
   NTooltip,
-  useThemeVars
+  useThemeVars,
+  NButtonGroup,
+  NCheckbox
 } from "naive-ui"
+import { ModelAlt, SubtractAlt, Renew } from "@vicons/carbon"
 import {
   environmentShowRepository,
   environmentHideRepository,
   environmentRemoveRepository,
   addRemoteRepoDialog,
-  bbcode2element
+  bbcode2element,
+  toVersionString,
+  compareVersion
 } from "~/helper/index.ts"
 import PageLayout from "~/layout/PageLayout.tsx"
-import { SubtractAlt, Renew } from "@vicons/carbon"
-import { useRepositoryStore } from "~/store/index.ts"
+import { usePackageStore, useRepositoryStore } from "~/store/index.ts"
 
 interface repository {
   id: string
@@ -26,33 +30,103 @@ interface repository {
   enabled: boolean
 }
 
-function headerExtra() {
-  const repositoryStore = useRepositoryStore()
-  return () => (
-    <div class="flex gap-3">
-      <NTooltip trigger="hover" placement="bottom" keepAliveOnHover={false}>
+const HeaderExtra = defineComponent({
+  setup() {
+    const repositoryStore = useRepositoryStore()
+    return () => (
+      <div class="flex gap-3 items-center">
+        <NCheckbox
+          checked={repositoryStore.showPrereleasePackages}
+          onUpdate:checked={v => (repositoryStore.showPrereleasePackages = v)}
+        >
+          Show Pre-release Packages
+        </NCheckbox>
+        <NTooltip trigger="hover" placement="bottom" keepAliveOnHover={false}>
+          {{
+            default: () => "Refresh repositories",
+            trigger: () => (
+              <NButton text onClick={repositoryStore.loadRepos} class="flex">
+                {{ icon: () => <Renew /> }}
+              </NButton>
+            )
+          }}
+        </NTooltip>
+        <NButton
+          type="primary"
+          size="small"
+          onClick={addRemoteRepoDialog()}
+          class="flex"
+        >
+          Add repository
+        </NButton>
+      </div>
+    )
+  }
+})
+
+const ShowPackages = defineComponent({
+  props: { repo: Object as PropType<repository> },
+  setup(props) {
+    const repo = props.repo!
+    const repositoryStore = useRepositoryStore()
+    const packageStore = usePackageStore()
+    const dialog = useDialog()
+
+    async function showPackages() {
+      if (packageStore.packages.length === 0) await packageStore.loadPackages()
+      const pkgs = packageStore.packages
+        .filter(
+          pkg =>
+            pkg.source !== "LocalUser" &&
+            pkg.source.Remote.id === repo.id &&
+            (!repositoryStore.showPrereleasePackages
+              ? pkg.version.pre === ""
+              : true)
+        )
+        .sort((a, b) => compareVersion(b.version, a.version))
+        .sort((a, b) => a.name.localeCompare(b.name))
+
+      console.log(repositoryStore.showPrereleasePackages)
+
+      dialog.info({
+        title: `Packages in ${repo.displayName}`,
+        content: () => (
+          <div class="flex flex-col gap-2">
+            <div>
+              Total: {pkgs.length} {pkgs.length === 1 ? "package" : "packages"}
+            </div>
+            <div class="max-h-16rem overflow-auto">
+              {pkgs.map(pkg => (
+                <li class="whitespace-nowrap">
+                  <span class="font-bold">{pkg.display_name ?? pkg.name}</span>
+                  <span class="pl-2">{toVersionString(pkg.version)}</span>
+                </li>
+              ))}
+            </div>
+          </div>
+        )
+      })
+      console.log(pkgs)
+    }
+    return () => (
+      <NTooltip>
         {{
-          default: () => "Refresh repositories",
           trigger: () => (
-            <NButton text onClick={repositoryStore.loadRepos} class="flex">
-              {{ icon: () => <Renew /> }}
-            </NButton>
-          )
+            <NButton
+              secondary
+              disabled={packageStore.loading}
+              renderIcon={() => <ModelAlt />}
+              onClick={showPackages}
+            />
+          ),
+          default: () => "Show Packages"
         }}
       </NTooltip>
-      <NButton
-        type="primary"
-        size="small"
-        onClick={addRemoteRepoDialog()}
-        class="flex"
-      >
-        Add repository
-      </NButton>
-    </div>
-  )
-}
+    )
+  }
+})
 
-export default defineComponent({
+const RepositoriesTable = defineComponent({
   setup() {
     const repositoryStore = useRepositoryStore()
     const dialog = useDialog()
@@ -95,9 +169,9 @@ export default defineComponent({
       {
         key: "displayName",
         title: "Name",
-        ellipsis: true,
+        width: "15rem",
         render: repo => (
-          <div class="flex flex-col">
+          <div class="flex flex-col w-full">
             <div class="font-bold text-size-4">{repo.displayName}</div>
             <span style={{ color: theme.value.textColor3 }}>{repo.id}</span>
           </div>
@@ -110,41 +184,51 @@ export default defineComponent({
       },
       {
         key: "actions",
-        width: "5rem",
+        width: "7rem",
         render: repo => (
-          <div class="flex flex-col">
-            <NTooltip trigger="hover" keepAliveOnHover={false}>
+          <NButtonGroup>
+            <ShowPackages repo={repo} />
+            <NTooltip>
               {{
-                default: () => "Remove repository",
                 trigger: () => (
-                  <NButton text type="error" onClick={() => removeRepo(repo)}>
-                    {{ icon: () => <SubtractAlt /> }}
-                  </NButton>
-                )
+                  <NButton
+                    secondary
+                    type="error"
+                    onClick={() => removeRepo(repo)}
+                    renderIcon={() => <SubtractAlt />}
+                  />
+                ),
+                default: () => "Remove Repository"
               }}
             </NTooltip>
-          </div>
+          </NButtonGroup>
         )
       }
     ]
 
     return () => (
+      <NDataTable
+        columns={columns}
+        loading={repositoryStore.loading}
+        data={repositoryStore.repositories ?? []}
+        rowKey={(r: repository) => r.id}
+        checkedRowKeys={repositoryStore.enabledRepos ?? []}
+        onUpdate:checkedRowKeys={keys => handleChecked(keys as string[])}
+        size="small"
+      >
+        {{ empty: () => <NEmpty>No repositories found</NEmpty> }}
+      </NDataTable>
+    )
+  }
+})
+
+export default defineComponent({
+  setup() {
+    return () => (
       <PageLayout title="Repositories">
         {{
-          default: () => (
-            <NDataTable
-              columns={columns}
-              loading={repositoryStore.loading}
-              data={repositoryStore.repositories ?? []}
-              rowKey={(r: repository) => r.id}
-              checkedRowKeys={repositoryStore.enabledRepos}
-              onUpdate:checkedRowKeys={keys => handleChecked(keys as string[])}
-              size="small"
-            >
-              {{ empty: () => <NEmpty>No repositories found</NEmpty> }}
-            </NDataTable>
-          ),
-          headerExtra: headerExtra()
+          default: () => <RepositoriesTable />,
+          headerExtra: () => <HeaderExtra />
         }}
       </PageLayout>
     )
