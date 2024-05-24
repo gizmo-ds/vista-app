@@ -9,7 +9,10 @@ import {
   NIcon,
   NInputGroup,
   NSelect,
-  useThemeVars
+  useThemeVars,
+  NButton,
+  NTooltip,
+  useLoadingBar
 } from "naive-ui"
 import { formatISO9075 } from "date-fns"
 import PageLayout from "~/layout/PageLayout.tsx"
@@ -18,7 +21,7 @@ import {
   type LogLevel,
   utilGetLogEntries
 } from "~/helper/index.ts"
-import { Search } from "@vicons/carbon"
+import { Renew, Search } from "@vicons/carbon"
 
 type NTagType = "default" | "info" | "error" | "success" | "primary" | "warning"
 
@@ -66,7 +69,11 @@ function logItem(
   )
 }
 
-function header(searchValue: Ref<string>, logTypeFilter: Ref<LogLevel[]>) {
+function header(
+  searchValue: Ref<string>,
+  logTypeFilter: Ref<LogLevel[]>,
+  refreshLogs: () => void
+) {
   const theme = useThemeVars()
   return () => (
     <div class="flex flex-row grow-1">
@@ -112,14 +119,37 @@ function header(searchValue: Ref<string>, logTypeFilter: Ref<LogLevel[]>) {
           />
         </NInputGroup>
       </div>
+      <div class="flex ml-3">
+        <NTooltip trigger="hover" placement="bottom" keepAliveOnHover={false}>
+          {{
+            default: () => "Refresh logs",
+            trigger: () => (
+              <NButton
+                text
+                onClick={refreshLogs}
+                renderIcon={() => <Renew />}
+                class="flex"
+              />
+            )
+          }}
+        </NTooltip>
+      </div>
     </div>
   )
 }
 
 export default defineComponent({
   setup() {
+    const loadingBar = useLoadingBar()
+
     let logs = $ref<LogEntry[]>([])
-    utilGetLogEntries().then((list: LogEntry[]) => (logs = list))
+    function refreshLogs() {
+      loadingBar.start()
+      utilGetLogEntries()
+        .finally(() => loadingBar.finish())
+        .then((list: LogEntry[]) => (logs = list))
+    }
+    refreshLogs()
     let logTypeFilter = $ref<LogLevel[]>(["Error", "Warn", "Info", "Debug"])
     let messageFilter = $ref("")
     let _logs = $computed(() => {
@@ -200,7 +230,7 @@ export default defineComponent({
               </NVirtualList>
             </>
           ),
-          header: header($$(messageFilter), $$(logTypeFilter))
+          header: header($$(messageFilter), $$(logTypeFilter), refreshLogs)
         }}
       </PageLayout>
     )
