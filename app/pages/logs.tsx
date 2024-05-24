@@ -12,7 +12,8 @@ import {
   useThemeVars,
   NButton,
   NTooltip,
-  useLoadingBar
+  useLoadingBar,
+  NEmpty
 } from "naive-ui"
 import { formatISO9075 } from "date-fns"
 import PageLayout from "~/layout/PageLayout.tsx"
@@ -151,7 +152,7 @@ export default defineComponent({
     }
     refreshLogs()
     let logTypeFilter = $ref<LogLevel[]>(["Error", "Warn", "Info", "Debug"])
-    let messageFilter = $ref("")
+    let messageFilter = $ref("sdfgsertgsdfgdg")
     let _logs = $computed(() => {
       return logs.filter(
         log =>
@@ -199,10 +200,10 @@ export default defineComponent({
     }
 
     return () => (
-      <PageLayout>
+      <PageLayout noPadding>
         {{
           default: () => (
-            <>
+            <div class="h-[calc(100%-2rem)] p-1rem">
               <NDropdown
                 placement="bottom-start"
                 trigger="manual"
@@ -218,17 +219,23 @@ export default defineComponent({
                 onSelect={handleContextMenuSelect}
               />
 
-              <NVirtualList
-                itemSize={28}
-                itemResizable
-                items={_logs}
-                class="h-[calc(100vh-5rem)]"
-              >
-                {({ item }: { item: LogEntry }) =>
-                  logItem(item, handleContextMenu)
-                }
-              </NVirtualList>
-            </>
+              {_logs.length > 0 ? (
+                <NVirtualList
+                  itemSize={28}
+                  itemResizable
+                  items={_logs}
+                  class="h-[calc(100vh-5rem)]"
+                >
+                  {({ item }: { item: LogEntry }) =>
+                    logItem(item, handleContextMenu)
+                  }
+                </NVirtualList>
+              ) : (
+                <div class="h-full flex flex-col justify-center">
+                  <NEmpty class="flex w-full">No logs found</NEmpty>
+                </div>
+              )}
+            </div>
           ),
           header: header($$(messageFilter), $$(logTypeFilter), refreshLogs)
         }}

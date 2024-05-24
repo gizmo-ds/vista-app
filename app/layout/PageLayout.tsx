@@ -27,7 +27,7 @@ export default defineComponent({
         {slots.default && (
           <NLayout position="absolute" class="top-3rem!">
             {props.noPadding ? (
-              <div>{slots.default!()}</div>
+              slots.default!()
             ) : (
               <div class="p-1rem">{slots.default!()}</div>
             )}
