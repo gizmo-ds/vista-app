@@ -243,7 +243,7 @@ pub(crate) fn startup(app: &mut App) {
             "main", /* the unique window label */
             tauri::WindowUrl::App(format!("/projects/?{query}").into()),
         )
-        .title("ALCOM")
+        .title("Vista")
         .resizable(true)
         .on_navigation(|url| {
             if cfg!(debug_assertions) {

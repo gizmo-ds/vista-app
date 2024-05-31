@@ -152,7 +152,7 @@ export default defineComponent({
     }
     refreshLogs()
     let logTypeFilter = $ref<LogLevel[]>(["Error", "Warn", "Info", "Debug"])
-    let messageFilter = $ref("sdfgsertgsdfgdg")
+    let messageFilter = $ref("")
     let _logs = $computed(() => {
       return logs.filter(
         log =>
