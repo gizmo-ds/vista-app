@@ -9,11 +9,10 @@ use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use futures::prelude::*;
-use indexmap::IndexMap;
 use log::{error, info, warn};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use specta::{specta, DataType, DefOpts, ExportError, Type};
+use specta::specta;
 use tauri::api::dialog::blocking::FileDialogBuilder;
 use tauri::async_runtime::Mutex;
 use tauri::{
@@ -23,6 +22,7 @@ use tokio::fs::read_dir;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncSeekExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 
+use crate::commands::async_command::immediate;
 use async_command::{async_command, AsyncCallResult, AsyncCommandContext, With};
 use vrc_get_vpm::environment::UserProject;
 use vrc_get_vpm::io::{DefaultEnvironmentIo, DefaultProjectIo, DirEntry, EnvironmentIo, IoTrait};
@@ -39,6 +39,7 @@ use vrc_get_vpm::{
 
 use crate::config::GuiConfigHolder;
 use crate::logging::LogEntry;
+use crate::specta::IndexMapV2;
 
 mod async_command;
 
@@ -46,6 +47,8 @@ pub(crate) fn handlers() -> impl Fn(Invoke) + Send + Sync + 'static {
     generate_handler![
         environment_language,
         environment_set_language,
+        environment_theme,
+        environment_set_theme,
         environment_projects,
         environment_add_project_with_picker,
         environment_remove_project,
@@ -85,10 +88,14 @@ pub(crate) fn handlers() -> impl Fn(Invoke) + Send + Sync + 'static {
         project_call_unity_for_migration,
         project_migrate_project_to_vpm,
         project_open_unity,
+        project_is_unity_launching,
         project_create_backup,
         util_open,
         util_get_log_entries,
         util_get_version,
+        crate::deep_link_support::deep_link_has_add_repository,
+        crate::deep_link_support::deep_link_take_add_repository,
+        crate::deep_link_support::deep_link_install_vcc,
     ]
 }
 
@@ -98,6 +105,8 @@ pub(crate) fn export_ts() {
         specta::collect_types![
             environment_language,
             environment_set_language,
+            environment_theme,
+            environment_set_theme,
             environment_projects,
             environment_add_project_with_picker,
             environment_remove_project,
@@ -137,10 +146,14 @@ pub(crate) fn export_ts() {
             project_call_unity_for_migration,
             project_migrate_project_to_vpm,
             project_open_unity,
+            project_is_unity_launching,
             project_create_backup,
             util_open,
             util_get_log_entries,
             util_get_version,
+            crate::deep_link_support::deep_link_has_add_repository,
+            crate::deep_link_support::deep_link_take_add_repository,
+            crate::deep_link_support::deep_link_install_vcc,
         ]
         .unwrap(),
         specta::ts::ExportConfiguration::new().bigint(specta::ts::BigIntExportBehavior::Number),
@@ -218,15 +231,19 @@ pub(crate) fn startup(app: &mut App) {
 
     async fn open_main(app: AppHandle) -> tauri::Result<()> {
         let state: State<'_, Mutex<EnvironmentState>> = app.state();
-        let (size, fullscreen) =
-            with_config!(state, |config| (config.window_size, config.fullscreen));
+        let config = with_config!(state, |config| config.clone());
+
+        let query = url::form_urlencoded::Serializer::new(String::new())
+            .append_pair("lang", &config.language)
+            .append_pair("theme", &config.theme)
+            .finish();
 
         let window = tauri::WindowBuilder::new(
             &app,
             "main", /* the unique window label */
-            tauri::WindowUrl::App("/projects".into()),
+            tauri::WindowUrl::App(format!("/projects/?{query}").into()),
         )
-        .title("Vista App")
+        .title("ALCOM")
         .resizable(true)
         .on_navigation(|url| {
             if cfg!(debug_assertions) {
@@ -240,14 +257,14 @@ pub(crate) fn startup(app: &mut App) {
         .build()?;
 
         // keep original size if it's too small
-        if size.width > 100 && size.height > 100 {
+        if config.window_size.width > 100 && config.window_size.height > 100 {
             window.set_size(LogicalSize {
-                width: size.width,
-                height: size.height,
+                width: config.window_size.width,
+                height: config.window_size.height,
             })?;
         }
 
-        window.set_fullscreen(fullscreen)?;
+        window.set_fullscreen(config.fullscreen)?;
 
         let cloned = window.clone();
 
@@ -528,8 +545,9 @@ struct TauriProject {
     path: String,
     project_type: TauriProjectType,
     unity: String,
-    last_modified: u64,
-    created_at: u64,
+    unity_revision: Option<String>,
+    last_modified: i64,
+    created_at: i64,
     favorite: bool,
     is_exists: bool,
 }
@@ -581,8 +599,9 @@ impl TauriProject {
                 .unity_version()
                 .map(|v| v.to_string())
                 .unwrap_or_else(|| "unknown".into()),
-            last_modified: project.last_modified().as_millis_since_epoch(),
-            created_at: project.crated_at().as_millis_since_epoch(),
+            unity_revision: project.unity_revision().map(|x| x.to_string()),
+            last_modified: project.last_modified().timestamp_millis(),
+            created_at: project.crated_at().timestamp_millis(),
             favorite: project.favorite(),
             is_exists,
         }
@@ -605,6 +624,25 @@ async fn environment_set_language(
 ) -> Result<(), RustError> {
     with_config!(state, |mut config| {
         config.language = language;
+        config.save().await?;
+        Ok(())
+    })
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn environment_theme(state: State<'_, Mutex<EnvironmentState>>) -> Result<String, RustError> {
+    with_config!(state, |config| Ok(config.theme.clone()))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn environment_set_theme(
+    state: State<'_, Mutex<EnvironmentState>>,
+    theme: String,
+) -> Result<(), RustError> {
+    with_config!(state, |mut config| {
+        config.theme = theme;
         config.save().await?;
         Ok(())
     })
@@ -1131,18 +1169,22 @@ async fn environment_unity_versions(
     with_environment!(&state, |environment| {
         environment.find_unity_hub().await.ok();
 
+        let unity_paths = environment
+            .get_unity_installations()?
+            .iter()
+            .filter_map(|unity| {
+                Some((
+                    unity.path().to_string(),
+                    unity.version()?.to_string(),
+                    unity.loaded_from_hub(),
+                ))
+            })
+            .collect();
+
+        environment.disconnect_litedb();
+
         Ok(TauriUnityVersions {
-            unity_paths: environment
-                .get_unity_installations()?
-                .iter()
-                .filter_map(|unity| {
-                    Some((
-                        unity.path().to_string(),
-                        unity.version()?.to_string(),
-                        unity.loaded_from_hub(),
-                    ))
-                })
-                .collect(),
+            unity_paths,
             recommended_version: VRCHAT_RECOMMENDED_2022_UNITY.to_string(),
             install_recommended_version_link: VRCHAT_RECOMMENDED_2022_UNITY_HUB_LINK.to_string(),
         })
@@ -1467,50 +1509,6 @@ enum TauriDownloadRepository {
 }
 
 // workaround IndexMap v2 is not implemented in specta
-
-#[derive(serde::Deserialize)]
-#[serde(transparent)]
-struct IndexMapV2<K: std::hash::Hash + Eq, V>(IndexMap<K, V>);
-
-impl Type for IndexMapV2<Box<str>, Box<str>> {
-    fn inline(opts: DefOpts, generics: &[DataType]) -> Result<DataType, ExportError> {
-        Ok(DataType::Record(Box::new((
-            String::inline(
-                DefOpts {
-                    parent_inline: opts.parent_inline,
-                    type_map: opts.type_map,
-                },
-                generics,
-            )?,
-            String::inline(
-                DefOpts {
-                    parent_inline: opts.parent_inline,
-                    type_map: opts.type_map,
-                },
-                generics,
-            )?,
-        ))))
-    }
-
-    fn reference(opts: DefOpts, generics: &[DataType]) -> Result<DataType, ExportError> {
-        Ok(DataType::Record(Box::new((
-            String::reference(
-                DefOpts {
-                    parent_inline: opts.parent_inline,
-                    type_map: opts.type_map,
-                },
-                generics,
-            )?,
-            String::reference(
-                DefOpts {
-                    parent_inline: opts.parent_inline,
-                    type_map: opts.type_map,
-                },
-                generics,
-            )?,
-        ))))
-    }
-}
 
 #[tauri::command]
 #[specta::specta]
@@ -1920,6 +1918,7 @@ async fn environment_create_project(
 struct TauriProjectDetails {
     unity: Option<(u16, u8)>,
     unity_str: Option<String>,
+    unity_revision: Option<String>,
     installed_packages: Vec<(String, TauriBasePackageInfo)>,
     should_resolve: bool,
 }
@@ -1941,6 +1940,7 @@ async fn project_details(project_path: String) -> Result<TauriProjectDetails, Ru
             .unity_version()
             .map(|v| (v.major(), v.minor())),
         unity_str: unity_project.unity_version().map(|v| v.to_string()),
+        unity_revision: unity_project.unity_revision().map(|x| x.to_string()),
         installed_packages: unity_project
             .installed_packages()
             .map(|(k, p)| (k.to_string(), TauriBasePackageInfo::new(p)))
@@ -2371,17 +2371,40 @@ async fn project_migrate_project_to_vpm(
     Ok(())
 }
 
+fn is_unity_running(project_path: impl AsRef<Path>) -> bool {
+    crate::os::is_locked(&project_path.as_ref().join("Temp/UnityLockFile")).unwrap_or(false)
+}
+
 #[tauri::command]
 #[specta::specta]
-async fn project_open_unity(project_path: String, unity_path: String) -> Result<(), RustError> {
-    crate::cmd_start::start_command(
+async fn project_open_unity(
+    state: State<'_, Mutex<EnvironmentState>>,
+    project_path: String,
+    unity_path: String,
+) -> Result<bool, RustError> {
+    if is_unity_running(&project_path) {
+        // it looks unity is running. returning false
+        return Ok(false);
+    }
+
+    with_environment!(&state, |environment| {
+        update_project_last_modified(environment, project_path.as_ref()).await;
+    });
+
+    crate::os::start_command(
         "Unity".as_ref(),
         unity_path.as_ref(),
         &["-projectPath".as_ref(), OsStr::new(project_path.as_str())],
     )
     .await?;
 
-    Ok(())
+    Ok(true)
+}
+
+#[tauri::command]
+#[specta::specta]
+fn project_is_unity_launching(project_path: String) -> bool {
+    return is_unity_running(&project_path);
 }
 
 fn folder_stream(
