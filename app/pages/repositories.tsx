@@ -1,4 +1,4 @@
-import { type PropType, defineComponent } from "vue"
+import { type PropType, defineComponent, computed } from "vue"
 import {
   type DataTableColumns,
   useDialog,
@@ -8,7 +8,8 @@ import {
   NTooltip,
   useThemeVars,
   NButtonGroup,
-  NCheckbox
+  NCheckbox,
+  NTag
 } from "naive-ui"
 import { ModelAlt, SubtractAlt, Renew } from "@vicons/carbon"
 import {
@@ -35,12 +36,6 @@ const HeaderExtra = defineComponent({
     const repositoryStore = useRepositoryStore()
     return () => (
       <div class="flex gap-3 items-center">
-        <NCheckbox
-          checked={repositoryStore.showPrereleasePackages}
-          onUpdate:checked={v => (repositoryStore.showPrereleasePackages = v)}
-        >
-          Show Pre-release Packages
-        </NCheckbox>
         <NTooltip trigger="hover" placement="bottom" keepAliveOnHover={false}>
           {{
             default: () => "Refresh repositories",
@@ -71,10 +66,8 @@ const ShowPackages = defineComponent({
     const repositoryStore = useRepositoryStore()
     const packageStore = usePackageStore()
     const dialog = useDialog()
-
-    async function showPackages() {
-      if (packageStore.packages.length === 0) await packageStore.loadPackages()
-      const pkgs = packageStore.packages
+    const pkgs = computed(() =>
+      packageStore.packages
         .filter(
           pkg =>
             pkg.source !== "LocalUser" &&
@@ -85,20 +78,38 @@ const ShowPackages = defineComponent({
         )
         .sort((a, b) => compareVersion(b.version, a.version))
         .sort((a, b) => a.name.localeCompare(b.name))
+    )
+
+    async function showPackages() {
+      if (packageStore.packages.length === 0) await packageStore.loadPackages()
 
       dialog.info({
         title: `Packages in ${repo.displayName}`,
         style: { width: "30rem" },
         content: () => (
           <div class="flex flex-col gap-2">
+            <NCheckbox
+              checked={repositoryStore.showPrereleasePackages}
+              onUpdate:checked={v =>
+                (repositoryStore.showPrereleasePackages = v)
+              }
+            >
+              Show Pre-release Packages
+            </NCheckbox>
             <div>
-              Total: {pkgs.length} {pkgs.length === 1 ? "package" : "packages"}
+              Total: {pkgs.value.length}{" "}
+              {pkgs.value.length === 1 ? "package" : "packages"}
             </div>
             <div class="max-h-16rem overflow-auto">
-              {pkgs.map(pkg => (
+              {pkgs.value.map(pkg => (
                 <li class="whitespace-nowrap">
                   <span class="font-bold">{pkg.display_name ?? pkg.name}</span>
                   <span class="pl-2">{toVersionString(pkg.version)}</span>
+                  {pkg.version.pre && (
+                    <NTag type="warning" size="tiny" class="ml-2">
+                      {"pre"}
+                    </NTag>
+                  )}
                 </li>
               ))}
             </div>

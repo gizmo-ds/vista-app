@@ -12,14 +12,14 @@
 
 use std::ffi::{OsStr, OsString};
 use std::fs::OpenOptions;
+use std::io;
 use std::mem::MaybeUninit;
 use std::os::windows::prelude::*;
 use std::path::Path;
-use std::{io, result};
 use tokio::process::Command;
 use windows::Win32::Foundation::{ERROR_LOCK_VIOLATION, HANDLE};
 use windows::Win32::Storage::FileSystem::{
-    LockFileEx, UnlockFileEx, LOCKFILE_EXCLUSIVE_LOCK, LOCKFILE_FAIL_IMMEDIATELY, LOCK_FILE_FLAGS,
+    LockFileEx, UnlockFileEx, LOCKFILE_EXCLUSIVE_LOCK, LOCKFILE_FAIL_IMMEDIATELY,
 };
 use windows::Win32::System::IO::OVERLAPPED;
 

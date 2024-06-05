@@ -5,7 +5,7 @@ devPath = "http://localhost:1420"
 distDir = "./dist"
 
 [package]
-productName = "Vista App"
+productName = "Vista"
 
 [tauri]
 
