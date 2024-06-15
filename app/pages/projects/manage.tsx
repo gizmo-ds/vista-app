@@ -1,82 +1,119 @@
-import { defineComponent, ref, computed } from "vue"
-import { NButton, NButtonGroup } from "naive-ui"
+import { defineComponent } from "vue"
+import {
+  NButton,
+  NButtonGroup,
+  NTooltip,
+  NCard,
+  NCheckbox,
+  NText
+} from "naive-ui"
 import { useRoute } from "vue-router"
+import { Folder, DataBackup } from "@vicons/carbon"
 import PageLayout from "@/app/layout/PageLayout"
 import {
   type TauriProjectDetails,
-  type TauriRepositoriesInfo,
   projectDetails,
-  environmentRepositoriesInfo,
   utilOpen
 } from "~/helper/index.ts"
 import OpenProject from "~/components/OpenProject.tsx"
-import { useUnityStore } from "@/app/store"
+import {
+  useUnityStore,
+  useRepositoryStore,
+  usePackageStore
+} from "~/store/index.ts"
+import PMList from "@/app/components/PMList"
 
-interface repository {
-  id: string
-  displayName: string
-  url: string
-  enabled: boolean
-}
+const HeaderExtra = defineComponent({
+  props: {
+    name: String,
+    path: String,
+    unityVersion: String
+  },
+  setup(props) {
+    const unityStore = useUnityStore()
+    const unityVersions = $computed(() => unityStore.unityVersions)
+    const unityPath = $computed(
+      () => unityVersions.find(v => v.version === props.unityVersion)?.path
+    )
+    return () => (
+      <div class="mr-2">
+        <NButtonGroup size="small">
+          <OpenProject
+            path={props.path}
+            unityPath={unityPath}
+            name={props.name}
+            showIcon
+          />
+          <NTooltip>
+            {{
+              trigger: () => (
+                <NButton
+                  onClick={() => utilOpen(props.path!)}
+                  renderIcon={() => <Folder />}
+                />
+              ),
+              default: () => "Reveal in File Explorer"
+            }}
+          </NTooltip>
+          <NTooltip>
+            {{
+              trigger: () => <NButton renderIcon={() => <DataBackup />} />,
+              default: () => "Create Backup"
+            }}
+          </NTooltip>
+        </NButtonGroup>
+      </div>
+    )
+  }
+})
 
-const detailsRef = ref<TauriProjectDetails>()
-const reposInfoRef = ref<TauriRepositoriesInfo>()
-const reposRef = computed(() =>
-  reposInfoRef.value?.user_repositories.map(
-    repo =>
-      ({
-        id: repo.id,
-        displayName: repo.display_name,
-        url: repo.url,
-        enabled: !reposInfoRef.value?.hidden_user_repositories.includes(repo.id)
-      } as repository)
-  )
-)
+const Manage = defineComponent({
+  props: {
+    path: String,
+    name: String,
+    unityVersion: String
+  },
+  setup(props) {
+    const packageStore = usePackageStore()
+    if (packageStore.packages.length === 0) packageStore.loadPackages()
+    const repositoryStore = useRepositoryStore()
+    let details = $ref<TauriProjectDetails>()
+    projectDetails(props.path!).then(v => (details = v))
 
-function headerExtra(name: string, path: string, unityVersion: string) {
-  const unityStore = useUnityStore()
-  const unityPath = computed(
-    () => unityStore.unityVersions.find(v => v.version === unityVersion)?.path
-  )
-  return () => (
-    <div class="mr-2">
-      <NButtonGroup size="small">
-        <OpenProject path={path} unityPath={unityPath.value} name={name} />
-        <NButton onClick={() => utilOpen(path)}>Open Folder</NButton>
-        <NButton>Backup</NButton>
-      </NButtonGroup>
-    </div>
-  )
-}
-
-function manageRender(path: string) {
-  projectDetails(path).then(r => {
-    detailsRef.value = r
-    console.log(r)
-  })
-  environmentRepositoriesInfo().then(r => {
-    reposInfoRef.value = r
-    console.log(r)
-  })
-
-  return () => (
-    <div class="flex flex-col gap-3">
-      <div>Located at: {path}</div>
-      <div>{JSON.stringify(reposRef.value, null, 2)}</div>
-    </div>
-  )
-}
+    return () => (
+      <div class="flex flex-col gap-2">
+        <NCard>
+          <div>
+            Located at: <NText code>{props.path}</NText>
+          </div>
+          <NCheckbox
+            checked={repositoryStore.showPrereleasePackages}
+            onUpdate:checked={v => (repositoryStore.showPrereleasePackages = v)}
+          >
+            Show Pre-release Packages
+          </NCheckbox>
+        </NCard>
+        <NCard>
+          <PMList details={details} />
+        </NCard>
+      </div>
+    )
+  }
+})
 
 export default defineComponent({
   setup() {
     const route = useRoute()
     const { name, path, unityVersion } = route.query as Record<string, string>
-
     return () => (
-      <PageLayout title={name} hasBack={true}>
+      <PageLayout title={name} hasBack={true} subtitle={path}>
         {{
-          default: manageRender(path),
-          headerExtra: headerExtra(name, path, unityVersion)
+          default: () => (
+            <Manage path={path} name={name} unityVersion={unityVersion} />
+          ),
+          headerExtra: () => (
+            <HeaderExtra name={name} path={path} unityVersion={unityVersion} />
+          )
         }}
       </PageLayout>
     )
